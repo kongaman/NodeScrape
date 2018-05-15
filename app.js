@@ -5,14 +5,29 @@ const cheerio = require('cheerio');
 const fs = require('fs');
 const app = express();
 const port = 8080;
-
+const masterList = [];
 //Webseite laden
-const url = "https://coinmarketcap.com/currencies/bitcoin/#markets";
+const url = "https://coinmarketcap.com/currencies/cryptonite/#markets";
 request(url, function(err, resp, body){
-    const $ = cheerio.load(body);
-    const brzzzzz = $('head');
-    console.log(brzzzzz);
-    
+    let $ = cheerio.load(body);
+    let liste = [];
+    let check = [];
+    let exchangeCount = $('tr').length - 1;
+    let t = $('tr td:nth-child(2)');
+    let i = $('tr td:nth-child(2)').children('img');
+    let p = $('tr td:nth-child(3)');
+    for (let index = 0; index < exchangeCount; index++) {
+        if (!check.includes($(t).eq(index).text())) {
+            check.push($(t).eq(index).text());
+            liste.push(
+                {   exchange : $(t).eq(index).text(), 
+                    pair : $(p).eq(index).text(), 
+                    imgUrl : $(i).eq(index).attr('src')
+                });
+        }    
+    }
+    masterList.push(liste);
+    console.log(masterList);
 });
 
 
@@ -20,5 +35,3 @@ request(url, function(err, resp, body){
 app.listen(port, function() {
     console.log(`app listening on port ${port}`);
 });
-
-
