@@ -28,6 +28,11 @@ request(url, function(err, resp, body){
     }
     masterList.push(liste);
     console.log(masterList);
+    fs.writeFile('output.json', JSON.stringify(masterList, null, 4), function(err){
+
+        console.log('File successfully written! - Check your project directory for the output.json file');
+    
+    })
 });
 
 
