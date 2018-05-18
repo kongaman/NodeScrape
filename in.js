@@ -11,8 +11,8 @@ request(apiURL, function(err, resp, body){
     for (let i in allCoins) {
         let marketsUrl = `https://coinmarketcap.com/currencies/${allCoins[i].website_slug}/#markets`;
         console.log(marketsUrl);
-    
-    
+
+
     }    
 });
 
