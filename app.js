@@ -1,40 +1,72 @@
 const express = require('express');
 const request = require('request');
 const cheerio = require('cheerio');
-
 const fs = require('fs');
 const app = express();
 const port = 8080;
+const cmcApiURL = 'https://api.coinmarketcap.com/v2/listings/';
 const masterList = [];
-//Webseite laden
-const url = "https://coinmarketcap.com/currencies/cryptonite/#markets";
-request(url, function(err, resp, body){
-    let $ = cheerio.load(body);
-    let liste = [];
-    let check = [];
-    let exchangeCount = $('tr').length - 1;
-    let t = $('tr td:nth-child(2)');
-    let i = $('tr td:nth-child(2)').children('img');
-    let p = $('tr td:nth-child(3)');
-    for (let index = 0; index < exchangeCount; index++) {
-        if (!check.includes($(t).eq(index).text())) {
-            check.push($(t).eq(index).text());
-            liste.push(
-                {   exchange : $(t).eq(index).text(), 
-                    pair : $(p).eq(index).text(), 
-                    imgUrl : $(i).eq(index).attr('src')
-                });
-        }    
-    }
-    masterList.push(liste);
-    console.log(masterList);
-    fs.writeFile('output.json', JSON.stringify(masterList, null, 4), function(err){
 
-        console.log('File successfully written! - Check your project directory for the output.json file');
-    
-    })
-});
+    request(cmcApiURL, function(err, resp, body){
+        console.log('Getting cmc-API');
 
+        const allCoins =  JSON.parse(body).data; 
+        let writeCount = 500;
+        for (let i in allCoins) {
+ 
+            let coinName = allCoins[i].name;       
+            let marketURL = `https://coinmarketcap.com/currencies/${allCoins[i].website_slug}/#markets`;
+
+            request(marketURL, function(err, resp, body){
+                console.log(`getting URL: ${marketURL}`);
+
+                let $ = cheerio.load(body);
+                const liste = { coinName: coinName,
+                                exchanges: [] };
+                const check = new Set();
+                
+                const t = $('tr td:nth-child(2)'),
+                      i = $('tr td:nth-child(2)').children('img'),
+                      p = $('tr td:nth-child(3)'),
+                      l = $('tr td:nth-child(3)').children('a');
+                      let exchangeCount = t.length;
+                      console.log(`${exchangeCount} Exchange(s) for ${coinName} found`);
+
+                for (let index = 0; index < t.length; index++) {
+                    
+        
+                    const exchangeName = $(t).eq(index).text(),
+                          imgUrl = $(i).eq(index).attr('src'),
+                          link = $(l).eq(index).attr('href'),
+                          pair = $(p).eq(index).text();
+        
+                    if (!check.has(exchangeName)) {
+                        check.add(exchangeName);
+                        liste.exchanges.push(
+                            {   exchangeName,
+                                link,
+                                pair, 
+                                imgUrl
+                            });
+                        console.log(`${exchangeName} added to ${coinName}`);
+                    } else {
+                        console.log('Exchange already in list');
+                    } 
+                }
+
+                masterList.push(liste);
+                console.log(`${coinName} exchanges pushed to masterlist`);
+                
+            });
+        }
+    });
+
+
+function writeToFile(filename, list) {
+    fs.writeFile(filename, JSON.stringify(list, null, 4), function(err){
+    console.log('File successfully written to project-directory');  
+    });
+}
 
 //Setting up the Server
 app.listen(port, function() {
